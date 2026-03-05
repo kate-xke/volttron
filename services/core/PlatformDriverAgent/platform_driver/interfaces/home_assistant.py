@@ -34,6 +34,8 @@ import logging
 import requests
 from requests import get
 
+from .handlers import LightHandler, ClimateHandler, GenericHandler
+
 _log = logging.getLogger(__name__)
 type_mapping = {"string": str,
                 "int": int,
@@ -42,6 +44,11 @@ type_mapping = {"string": str,
                 "bool": bool,
                 "boolean": bool}
 
+service_mapping= {
+    "light": LightHandler(),
+    "climate": ClimateHandler(),
+    "input_boolean": GenericHandler(),
+}
 
 class HomeAssistantRegister(BaseRegister):
     def __init__(self, read_only, pointName, units, reg_type, attributes, entity_id, entity_point, default_value=None,
@@ -115,74 +122,17 @@ class Interface(BasicRevert, BaseInterface):
             raise IOError(
                 "Trying to write to a point configured read only: " + point_name)
         register.value = register.reg_type(value)  # setting the value
-        entity_point = register.entity_point
-        # Changing lights values in home assistant based off of register value.
-        if "light." in register.entity_id:
-            if entity_point == "state":
-                if isinstance(register.value, int) and register.value in [0, 1]:
-                    if register.value == 1:
-                        self.turn_on_lights(register.entity_id)
-                    elif register.value == 0:
-                        self.turn_off_lights(register.entity_id)
-                else:
-                    error_msg = f"State value for {register.entity_id} should be an integer value of 1 or 0"
-                    _log.info(error_msg)
-                    raise ValueError(error_msg)
 
-            elif entity_point == "brightness":
-                if isinstance(register.value, int) and 0 <= register.value <= 255:  # Make sure its int and within range
-                    self.change_brightness(register.entity_id, register.value)
-                else:
-                    error_msg = "Brightness value should be an integer between 0 and 255"
-                    _log.error(error_msg)
-                    raise ValueError(error_msg)
-            else:
-                error_msg = f"Unexpected point_name {point_name} for register {register.entity_id}"
-                _log.error(error_msg)
-                raise ValueError(error_msg)
-
-        elif "input_boolean." in register.entity_id:
-            if entity_point == "state":
-                if isinstance(register.value, int) and register.value in [0, 1]:
-                    if register.value == 1:
-                        self.set_input_boolean(register.entity_id, "on")
-                    elif register.value == 0:
-                        self.set_input_boolean(register.entity_id, "off")
-                else:
-                    error_msg = f"State value for {register.entity_id} should be an integer value of 1 or 0"
-                    _log.info(error_msg)
-                    raise ValueError(error_msg)
-            else:
-                _log.info(f"Currently, input_booleans only support state")
-
-        # Changing thermostat values.
-        elif "climate." in register.entity_id:
-            if entity_point == "state":
-                if isinstance(register.value, int) and register.value in [0, 2, 3, 4]:
-                    if register.value == 0:
-                        self.change_thermostat_mode(entity_id=register.entity_id, mode="off")
-                    elif register.value == 2:
-                        self.change_thermostat_mode(entity_id=register.entity_id, mode="heat")
-                    elif register.value == 3:
-                        self.change_thermostat_mode(entity_id=register.entity_id, mode="cool")
-                    elif register.value == 4:
-                        self.change_thermostat_mode(entity_id=register.entity_id, mode="auto")
-                else:
-                    error_msg = f"Climate state should be an integer value of 0, 2, 3, or 4"
-                    _log.error(error_msg)
-                    raise ValueError(error_msg)
-            elif entity_point == "temperature":
-                self.set_thermostat_temperature(entity_id=register.entity_id, temperature=register.value)
-
-            else:
-                error_msg = f"Currently set_point is supported only for thermostats state and temperature {register.entity_id}"
-                _log.error(error_msg)
-                raise ValueError(error_msg)
-        else:
-            error_msg = f"Unsupported entity_id: {register.entity_id}. " \
-                        f"Currently set_point is supported only for thermostats and lights"
+        # Get domain from entity_id to determine which handler to use.
+        domain = register.entity_id.split(".")[0]
+        handler = service_mapping.get(domain, None)
+        if handler is None:
+            error_msg = f"No handler found for domain: {domain}. " \
+                        f"Currently supported domains are: {list(service_mapping.keys())}"
             _log.error(error_msg)
             raise ValueError(error_msg)
+        handler.handle_write(self, register, value)
+
         return register.value
 
     def get_entity_data(self, point_name):
