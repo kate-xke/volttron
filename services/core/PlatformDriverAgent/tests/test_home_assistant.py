@@ -26,6 +26,8 @@ import json
 import logging
 import pytest
 import gevent
+# import os for environment variables to avoid hardcoding in test file
+import os
 
 from volttron.platform.agent.known_identities import (
     PLATFORM_DRIVER,
@@ -41,9 +43,10 @@ logger = logging.getLogger(__name__)
 
 # To run these tests, create a helper toggle named volttrontest in your Home Assistant instance.
 # This can be done by going to Settings > Devices & services > Helpers > Create Helper > Toggle
-HOMEASSISTANT_TEST_IP = ""
-ACCESS_TOKEN = ""
-PORT = ""
+# Use os to set env for the IP address, access token, and port of your Home Assistant instance.
+HOMEASSISTANT_TEST_IP = os.getenv("HA_IP", "")
+ACCESS_TOKEN = os.getenv("HA_ACCESS_TOKEN", "")
+PORT = os.getenv("HA_PORT", "")
 
 skip_msg = "Some configuration variables are not set. Check HOMEASSISTANT_TEST_IP, ACCESS_TOKEN, and PORT"
 
