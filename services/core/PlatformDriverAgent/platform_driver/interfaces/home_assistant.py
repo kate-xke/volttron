@@ -34,7 +34,7 @@ import logging
 import requests
 from requests import get
 
-from .handlers import LightHandler, ClimateHandler, GenericHandler, FanHandler
+from .handlers import LightHandler, ClimateHandler, GenericHandler, FanHandler, SwitchHandler
 from .api_client import HomeAssistantAPIClient
 
 _log = logging.getLogger(__name__)
@@ -50,6 +50,7 @@ service_mapping= {
     "climate": ClimateHandler(),
     "input_boolean": GenericHandler(),
     "fan": FanHandler(),
+    "switch": SwitchHandler(),
 }
 
 class HomeAssistantRegister(BaseRegister):
