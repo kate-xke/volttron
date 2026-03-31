@@ -4,9 +4,22 @@ Home Assistant Driver
 =====================
 
 The Home Assistant driver enables VOLTTRON to read any data point from any Home Assistant controlled device.
-Currently control(write access) is supported only for lights(state and brightness) and thermostats(state and temperature).
+Currently control (write access) is supported for lights (state and brightness), thermostats (state and temperature), switches (state), and fans (state and speed).
+Fan speed accepts values 1/2/3 or low/medium/high and is mapped to Home Assistant percentage control.
 
 The following diagram shows interaction between platform driver agent and home assistant driver.
+
+.. .. mermaid::
+..
+..    sequenceDiagram
+..        HomeAssistant Driver->>HomeAssistant: Retrieve Entity Data (REST API)
+..        HomeAssistant-->>HomeAssistant Driver: Entity Data (Status Code: 200)
+..        HomeAssistant Driver->>PlatformDriverAgent: Publish Entity Data
+..        PlatformDriverAgent->>Controller Agent: Publish Entity Data
+..
+..        Controller Agent->>HomeAssistant Driver: Instruct to Turn Off Light
+..        HomeAssistant Driver->>HomeAssistant: Send Turn Off Light Command (REST API)
+..        HomeAssistant-->>HomeAssistant Driver: Command Acknowledgement (Status Code: 200)
 
 .. mermaid::
 
@@ -18,6 +31,14 @@ The following diagram shows interaction between platform driver agent and home a
 
        Controller Agent->>HomeAssistant Driver: Instruct to Turn Off Light
        HomeAssistant Driver->>HomeAssistant: Send Turn Off Light Command (REST API)
+       HomeAssistant-->>HomeAssistant Driver: Command Acknowledgement (Status Code: 200)
+
+       Controller Agent->>HomeAssistant Driver: Instruct to Turn On Switch
+       HomeAssistant Driver->>HomeAssistant: Send Turn On Switch Command (REST API)
+       HomeAssistant-->>HomeAssistant Driver: Command Acknowledgement (Status Code: 200)
+
+       Controller Agent->>HomeAssistant Driver: Instruct to Set Fan Speed
+       HomeAssistant Driver->>HomeAssistant: Send Set Fan Speed Command (REST API)
        HomeAssistant-->>HomeAssistant Driver: Command Acknowledgement (Status Code: 200)
 
 Pre-requisites
@@ -57,13 +78,41 @@ Device configuration file contains the connection details to you home assistant 
        "timezone": "UTC"
    }
 
+.. code-block:: json
+
+   {
+       "driver_config": {
+           "ip_address": "Your Home Assistant IP",
+           "access_token": "Your Home Assistant Access Token",
+           "port": "Your Port"
+       },
+       "driver_type": "home_assistant",
+       "registry_config": "config://switch.example.json",
+       "interval": 30,
+       "timezone": "UTC"
+   }
+
+.. code-block:: json
+
+   {
+       "driver_config": {
+           "ip_address": "Your Home Assistant IP",
+           "access_token": "Your Home Assistant Access Token",
+           "port": "Your Port"
+       },
+       "driver_type": "home_assistant",
+       "registry_config": "config://fan.example.json",
+       "interval": 30,
+       "timezone": "UTC"
+   }
+
 Registry Configuration
 +++++++++++++++++++++++
 
 Registry file can contain one single device and its attributes or a logical group of devices and its
 attributes. Each entry should include the full entity id of the device, including but not limited to home assistant provided prefix
-such as "light.",  "climate." etc. The driver uses these prefixes to convert states into integers.
-Like mentioned before, the driver can only control lights and thermostats but can get data from all devices
+such as "light.",  "climate.", "switch.", "fan.". The driver uses these prefixes to convert states into integers.
+Like mentioned before, the driver can only control lights, thermostats, switches and fans, but can get data from all devices
 controlled by home assistant
 
 Each entry in a registry file should also have a 'Entity Point' and a unique value for 'Volttron Point Name'. The 'Entity ID' maps to the device instance, the 'Entity Point' extracts the attribute or state, and 'Volttron Point Name' determines the name of that point as it appears in VOLTTRON.
@@ -104,6 +153,88 @@ id 'light.example':
        }
    ]
 
+Below is an example file named switch.example.json which has attributes of a single switch instance with entity
+id 'switch.example':
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "switch.example",
+           "Entity Point": "state",
+           "Volttron Point Name": "switch_state",
+           "Units": "On / Off",
+           "Units Details": "0=off, 1=on",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Switch on/off control (write supports only 0 or 1)"
+       }
+   ]
+
+Below is an example file named fan.example.json which has attributes of a single fan instance with entity
+id 'fan.example':
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "fan.example",
+           "Entity Point": "state",
+           "Volttron Point Name": "fan_state",
+           "Units": "On / Off",
+           "Units Details": "0=off, 1=on",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Fan on/off control (write supports only 0 or 1)"
+       },
+       {
+           "Entity ID": "fan.example",
+           "Entity Point": "speed",
+           "Volttron Point Name": "fan_speed",
+           "Units": "Enumeration",
+           "Units Details": "1=low, 2=medium, 3=high (mapped to Home Assistant percentage 33/66/100)",
+           "Writable": true,
+           "Starting Value": 1,
+           "Type": "int",
+           "Notes": "Use Entity Point 'speed'. Write accepts 1/2/3 or low/medium/high; driver maps to HA percentage. Read maps HA attributes.percentage back to 0/1/2/3 (0 when off)."
+       }
+   ]
+
+Example Fan Registry
+********************
+
+For fans, the state is converted into numbers as follows: "0: Off, 1: On".
+Fan speed is represented as "0: Off, 1: Low, 2: Medium, 3: High". The driver uses Entity Point ``speed`` and maps it to
+Home Assistant percentage control (write: 1/2/3 or low/medium/high -> 33/66/100; read: HA ``attributes.percentage`` -> 0/1/2/3, and returns 0 when the fan is off).
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "fan.my_fan",
+           "Entity Point": "state",
+           "Volttron Point Name": "fan_state",
+           "Units": "Enumeration",
+           "Units Details": "0=off, 1=on",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "On/off control for the fan"
+       },
+       {
+           "Entity ID": "fan.my_fan",
+           "Entity Point": "speed",
+           "Volttron Point Name": "fan_speed",
+           "Units": "Enumeration",
+           "Units Details": "0=Off, 1=Low, 2=Medium, 3=High (mapped to HA percentage 33/66/100)",
+           "Writable": true,
+           "Starting Value": 1,
+           "Type": "int",
+           "Notes": "Fan speed control via Entity Point 'speed' (maps to Home Assistant percentage)"
+       }
+   ]
 
 .. note::
 
@@ -115,7 +246,7 @@ id  'light.instance1' and 'light.instance2' the entry for the attribute brightne
 have "Volttron Point Name" as 'light1/brightness' and 'light2/brightness' respectively. This would ensure that data
 is posted to unique topic names and brightness data from light1 is not overwritten by light2 or vice-versa.
 
-Example Thermostat Registry
+Example Thermostat and Fan Registry
 ***************************
 
 For thermostats, the state is converted into numbers as follows: "0: Off, 2: heat, 3: Cool, 4: Auto",
@@ -158,8 +289,6 @@ For thermostats, the state is converted into numbers as follows: "0: Off, 2: hea
        }
    ]
 
-
-
 Transfer the registers files and the config files into the VOLTTRON config store using the commands below:
 
 .. code-block:: bash
@@ -183,4 +312,4 @@ To run tests on the VOLTTRON home assistant driver you need to create a helper i
 .. code-block:: bash
     pytest volttron/services/core/PlatformDriverAgent/tests/test_home_assistant.py
 
-If everything works, you will see 6 passed tests.
+If everything works, the tests should pass.
