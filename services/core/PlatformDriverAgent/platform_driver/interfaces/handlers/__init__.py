@@ -10,11 +10,13 @@ from .light_handler import LightHandler
 from .climate_handler import ClimateHandler
 from .generic_handler import GenericHandler
 from .fan_handler import FanHandler
+from .switch_handler import SwitchHandler
 
 __all__ = [
     "BaseHandler",
     "LightHandler",
     "ClimateHandler",
     "GenericHandler",
-    "FanHandler"
+    "FanHandler",
+    "SwitchHandler" 
 ]
