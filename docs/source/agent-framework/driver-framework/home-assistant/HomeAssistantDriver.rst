@@ -4,22 +4,10 @@ Home Assistant Driver
 =====================
 
 The Home Assistant driver enables VOLTTRON to read any data point from any Home Assistant controlled device.
-Currently control (write access) is supported for lights (state and brightness), thermostats (state and temperature), switches (state), and fans (state and speed).
-Fan speed accepts values 1/2/3 or low/medium/high and is mapped to Home Assistant percentage control.
+Currently control (write access) is supported for lights (state and brightness), thermostats (state and temperature),
+switches (state), and fans (state and speed).
 
 The following diagram shows interaction between platform driver agent and home assistant driver.
-
-.. .. mermaid::
-..
-..    sequenceDiagram
-..        HomeAssistant Driver->>HomeAssistant: Retrieve Entity Data (REST API)
-..        HomeAssistant-->>HomeAssistant Driver: Entity Data (Status Code: 200)
-..        HomeAssistant Driver->>PlatformDriverAgent: Publish Entity Data
-..        PlatformDriverAgent->>Controller Agent: Publish Entity Data
-..
-..        Controller Agent->>HomeAssistant Driver: Instruct to Turn Off Light
-..        HomeAssistant Driver->>HomeAssistant: Send Turn Off Light Command (REST API)
-..        HomeAssistant-->>HomeAssistant Driver: Command Acknowledgement (Status Code: 200)
 
 .. mermaid::
 
@@ -78,41 +66,13 @@ Device configuration file contains the connection details to you home assistant 
        "timezone": "UTC"
    }
 
-.. code-block:: json
-
-   {
-       "driver_config": {
-           "ip_address": "Your Home Assistant IP",
-           "access_token": "Your Home Assistant Access Token",
-           "port": "Your Port"
-       },
-       "driver_type": "home_assistant",
-       "registry_config": "config://switch.example.json",
-       "interval": 30,
-       "timezone": "UTC"
-   }
-
-.. code-block:: json
-
-   {
-       "driver_config": {
-           "ip_address": "Your Home Assistant IP",
-           "access_token": "Your Home Assistant Access Token",
-           "port": "Your Port"
-       },
-       "driver_type": "home_assistant",
-       "registry_config": "config://fan.example.json",
-       "interval": 30,
-       "timezone": "UTC"
-   }
-
 Registry Configuration
 +++++++++++++++++++++++
 
 Registry file can contain one single device and its attributes or a logical group of devices and its
 attributes. Each entry should include the full entity id of the device, including but not limited to home assistant provided prefix
-such as "light.",  "climate.", "switch.", "fan.". The driver uses these prefixes to convert states into integers.
-Like mentioned before, the driver can only control lights, thermostats, switches and fans, but can get data from all devices
+such as "light.",  "climate." etc. The driver uses these prefixes to convert states into integers.
+Like mentioned before, the driver can only control lights and thermostats but can get data from all devices
 controlled by home assistant
 
 Each entry in a registry file should also have a 'Entity Point' and a unique value for 'Volttron Point Name'. The 'Entity ID' maps to the device instance, the 'Entity Point' extracts the attribute or state, and 'Volttron Point Name' determines the name of that point as it appears in VOLTTRON.
@@ -153,100 +113,18 @@ id 'light.example':
        }
    ]
 
-Below is an example file named switch.example.json which has attributes of a single switch instance with entity
-id 'switch.example':
-
-.. code-block:: json
-
-   [
-       {
-           "Entity ID": "switch.example",
-           "Entity Point": "state",
-           "Volttron Point Name": "switch_state",
-           "Units": "On / Off",
-           "Units Details": "0=off, 1=on",
-           "Writable": true,
-           "Starting Value": 0,
-           "Type": "int",
-           "Notes": "Switch on/off control (write supports only 0 or 1)"
-       }
-   ]
-
-Below is an example file named fan.example.json which has attributes of a single fan instance with entity
-id 'fan.example':
-
-.. code-block:: json
-
-   [
-       {
-           "Entity ID": "fan.example",
-           "Entity Point": "state",
-           "Volttron Point Name": "fan_state",
-           "Units": "On / Off",
-           "Units Details": "0=off, 1=on",
-           "Writable": true,
-           "Starting Value": 0,
-           "Type": "int",
-           "Notes": "Fan on/off control (write supports only 0 or 1)"
-       },
-       {
-           "Entity ID": "fan.example",
-           "Entity Point": "speed",
-           "Volttron Point Name": "fan_speed",
-           "Units": "Enumeration",
-           "Units Details": "1=low, 2=medium, 3=high (mapped to Home Assistant percentage 33/66/100)",
-           "Writable": true,
-           "Starting Value": 1,
-           "Type": "int",
-           "Notes": "Use Entity Point 'speed'. Write accepts 1/2/3 or low/medium/high; driver maps to HA percentage. Read maps HA attributes.percentage back to 0/1/2/3 (0 when off)."
-       }
-   ]
-
-Example Fan Registry
-********************
-
-For fans, the state is converted into numbers as follows: "0: Off, 1: On".
-Fan speed is represented as "0: Off, 1: Low, 2: Medium, 3: High". The driver uses Entity Point ``speed`` and maps it to
-Home Assistant percentage control (write: 1/2/3 or low/medium/high -> 33/66/100; read: HA ``attributes.percentage`` -> 0/1/2/3, and returns 0 when the fan is off).
-
-.. code-block:: json
-
-   [
-       {
-           "Entity ID": "fan.my_fan",
-           "Entity Point": "state",
-           "Volttron Point Name": "fan_state",
-           "Units": "Enumeration",
-           "Units Details": "0=off, 1=on",
-           "Writable": true,
-           "Starting Value": 0,
-           "Type": "int",
-           "Notes": "On/off control for the fan"
-       },
-       {
-           "Entity ID": "fan.my_fan",
-           "Entity Point": "speed",
-           "Volttron Point Name": "fan_speed",
-           "Units": "Enumeration",
-           "Units Details": "0=Off, 1=Low, 2=Medium, 3=High (mapped to HA percentage 33/66/100)",
-           "Writable": true,
-           "Starting Value": 1,
-           "Type": "int",
-           "Notes": "Fan speed control via Entity Point 'speed' (maps to Home Assistant percentage)"
-       }
-   ]
 
 .. note::
 
-When using a single registry file to represent a logical group of multiple physical entities, make sure the
-"Volttron Point Name" is unique within a single registry file.
+   When using a single registry file to represent a logical group of multiple physical entities, make sure the
+   "Volttron Point Name" is unique within a single registry file.
 
-For example, if a registry file contains entities with
-id  'light.instance1' and 'light.instance2' the entry for the attribute brightness for these two light instances could
-have "Volttron Point Name" as 'light1/brightness' and 'light2/brightness' respectively. This would ensure that data
-is posted to unique topic names and brightness data from light1 is not overwritten by light2 or vice-versa.
+   For example, if a registry file contains entities with
+   id  'light.instance1' and 'light.instance2' the entry for the attribute brightness for these two light instances could
+   have "Volttron Point Name" as 'light1/brightness' and 'light2/brightness' respectively. This would ensure that data
+   is posted to unique topic names and brightness data from light1 is not overwritten by light2 or vice-versa.
 
-Example Thermostat and Fan Registry
+Example Thermostat Registry
 ***************************
 
 For thermostats, the state is converted into numbers as follows: "0: Off, 2: heat, 3: Cool, 4: Auto",
@@ -289,6 +167,8 @@ For thermostats, the state is converted into numbers as follows: "0: Off, 2: hea
        }
    ]
 
+
+
 Transfer the registers files and the config files into the VOLTTRON config store using the commands below:
 
 .. code-block:: bash
@@ -310,6 +190,216 @@ Running Tests
 To run tests on the VOLTTRON home assistant driver you need to create a helper in your home assistant instance. This can be done by going to **Settings > Devices & services > Helpers > Create Helper > Toggle**. Name this new toggle **volttrontest**. After that run the pytest from the root of your VOLTTRON file.
 
 .. code-block:: bash
-    pytest volttron/services/core/PlatformDriverAgent/tests/test_home_assistant.py
 
-If everything works, the tests should pass.
+   pytest volttron/services/core/PlatformDriverAgent/tests/test_home_assistant.py
+
+If everything works, you will see 6 passed tests.
+
+Switch Support
+--------------
+
+The switch driver adds write access for Home Assistant ``switch.*`` entities.
+State is represented as an integer: 0 for off and 1 for on.
+Only the ``state`` entity point is supported for write access.
+
+Device configuration
+++++++++++++++++++++
+
+The device configuration for a switch is identical in structure to other device types.
+Set ``registry_config`` to point to your switch registry file.
+
+.. code-block:: json
+
+   {
+       "driver_config": {
+           "ip_address": "Your Home Assistant IP",
+           "access_token": "Your Home Assistant Access Token",
+           "port": "Your Port"
+       },
+       "driver_type": "home_assistant",
+       "registry_config": "config://switch.example.json",
+       "interval": 30,
+       "timezone": "UTC"
+   }
+
+Registry Configuration
++++++++++++++++++++++++
+
+Each entry should use the ``switch.`` entity prefix. The ``state`` entity point reads back 0 (off)
+or 1 (on) and accepts the same values on write.
+
+Below is an example file named switch.example.json which has attributes of a single switch instance with entity
+id 'switch.example':
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "switch.example",
+           "Entity Point": "state",
+           "Volttron Point Name": "switch_state",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: On",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Switch on/off control. Write accepts 0 or 1 only."
+       }
+   ]
+
+Example Switch Registry
+***********************
+
+For switches, the state is converted into numbers as follows: "0: Off, 1: On".
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "switch.my_switch",
+           "Entity Point": "state",
+           "Volttron Point Name": "switch_state",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: On",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Switch on/off control. Write accepts 0 or 1 only."
+       }
+   ]
+
+Transfer the registry file and the config file into the VOLTTRON config store using the commands below:
+
+.. code-block:: bash
+
+   vctl config store platform.driver switch.example.json HomeAssistant_Driver/switch.example.json
+   vctl config store platform.driver devices/BUILDING/ROOM/switch.example HomeAssistant_Driver/switch.example.config
+
+Running Tests
++++++++++++++++++++++++
+
+To run unit tests for the switch handler, run the pytest from the root of your VOLTTRON file:
+
+.. code-block:: bash
+
+   pytest volttron/services/core/PlatformDriverAgent/tests/test_home_assistant_switch_handler.py
+
+If everything works, you will see all tests passed.
+
+Fan Support
+-----------
+
+The fan driver adds write access for Home Assistant ``fan.*`` entities.
+State is represented as an integer: 0 for off and 1 for on.
+Fan speed supports both numeric (1/2/3) and string (low/medium/high) values when writing,
+mapped to Home Assistant percentage control (33/66/100%). When reading, the percentage is
+mapped back to 0 (off), 1 (low, ≤33%), 2 (medium, ≤66%), or 3 (high, >66%).
+
+Device configuration
+++++++++++++++++++++
+
+The device configuration for a fan is identical in structure to other device types.
+Set ``registry_config`` to point to your fan registry file.
+
+.. code-block:: json
+
+   {
+       "driver_config": {
+           "ip_address": "Your Home Assistant IP",
+           "access_token": "Your Home Assistant Access Token",
+           "port": "Your Port"
+       },
+       "driver_type": "home_assistant",
+       "registry_config": "config://fan.example.json",
+       "interval": 30,
+       "timezone": "UTC"
+   }
+
+Registry Configuration
++++++++++++++++++++++++
+
+Each entry should use the ``fan.`` entity prefix. Two entity points are supported:
+
+- ``state`` — reads and writes on/off as 0 or 1.
+- ``speed`` — reads back 0/1/2/3 and accepts 1/2/3 or low/medium/high on write.
+
+Below is an example file named fan.example.json which has attributes of a single fan instance with entity
+id 'fan.example':
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "fan.example",
+           "Entity Point": "state",
+           "Volttron Point Name": "fan_state",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: On",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Fan on/off control. Write accepts 0 or 1 only."
+       },
+       {
+           "Entity ID": "fan.example",
+           "Entity Point": "speed",
+           "Volttron Point Name": "fan_speed",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: Low, 2: Medium, 3: High (mapped to HA percentage 33/66/100%)",
+           "Writable": true,
+           "Starting Value": 1,
+           "Type": "int",
+           "Notes": "Fan speed control. Write accepts 1/2/3 or low/medium/high. Read returns 0 when off."
+       }
+   ]
+
+Example Fan Registry
+********************
+
+For fans, the state is converted into numbers as follows: "0: Off, 1: On".
+Fan speed is represented as "0: Off, 1: Low, 2: Medium, 3: High".
+
+.. code-block:: json
+
+   [
+       {
+           "Entity ID": "fan.my_fan",
+           "Entity Point": "state",
+           "Volttron Point Name": "fan_state",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: On",
+           "Writable": true,
+           "Starting Value": 0,
+           "Type": "int",
+           "Notes": "Fan on/off control. Write accepts 0 or 1 only."
+       },
+       {
+           "Entity ID": "fan.my_fan",
+           "Entity Point": "speed",
+           "Volttron Point Name": "fan_speed",
+           "Units": "Enumeration",
+           "Units Details": "0: Off, 1: Low, 2: Medium, 3: High (mapped to HA percentage 33/66/100%)",
+           "Writable": true,
+           "Starting Value": 1,
+           "Type": "int",
+           "Notes": "Fan speed control. Write accepts 1/2/3 or low/medium/high. Read returns 0 when off."
+       }
+   ]
+
+Transfer the registry file and the config file into the VOLTTRON config store using the commands below:
+
+.. code-block:: bash
+
+   vctl config store platform.driver fan.example.json HomeAssistant_Driver/fan.example.json
+   vctl config store platform.driver devices/BUILDING/ROOM/fan.example HomeAssistant_Driver/fan.example.config
+
+Running Tests
++++++++++++++++++++++++
+
+To run unit tests for the fan handler, run the pytest from the root of your VOLTTRON file:
+
+.. code-block:: bash
+
+   pytest volttron/services/core/PlatformDriverAgent/tests/test_home_assistant_fan_handler.py
+
+If everything works, you will see all tests passed.
