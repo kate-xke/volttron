@@ -1,0 +1,22 @@
+[{
+    "Entity ID": "fan.volttrontest_fan",
+    "Entity Point": "state",
+    "Volttron Point Name": "fan_state",
+    "Units": "On / Off",
+    "Units Details": "off: 0, on: 1",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test fan state"
+},
+{
+    "Entity ID": "fan.volttrontest_fan",
+    "Entity Point": "speed",
+    "Volttron Point Name": "fan_speed",
+    "Units": "speed level",
+    "Units Details": "1: low, 2: medium, 3: high",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test fan speed"
+}]

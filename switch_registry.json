@@ -1,0 +1,11 @@
+[{
+    "Entity ID": "switch.volttrontest_switch",
+    "Entity Point": "state",
+    "Volttron Point Name": "switch_state",
+    "Units": "On / Off",
+    "Units Details": "off: 0, on: 1",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test switch"
+}]
