@@ -1,0 +1,11 @@
+{
+    "driver_config": {
+        "ip_address": "YOUR_HA_IP",
+        "access_token": "YOUR_ACCESS_TOKEN",
+        "port": "8123"
+    },
+    "driver_type": "home_assistant",
+    "registry_config": "config://switch_registry.json",
+    "interval": 30,
+    "timezone": "US/Pacific"
+}
