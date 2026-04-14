@@ -1,0 +1,22 @@
+[{
+    "Entity ID": "climate.volttrontest_thermostat",
+    "Entity Point": "state",
+    "Volttron Point Name": "climate_state",
+    "Units": "mode",
+    "Units Details": "off: 0, heat: 2, cool: 3, auto: 4",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test climate state"
+},
+{
+    "Entity ID": "climate.volttrontest_thermostat",
+    "Entity Point": "temperature",
+    "Volttron Point Name": "climate_temperature",
+    "Units": "degrees",
+    "Units Details": "target temperature",
+    "Writable": true,
+    "Starting Value": 70,
+    "Type": "float",
+    "Notes": "test climate temperature"
+}]

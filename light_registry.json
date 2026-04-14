@@ -1,0 +1,22 @@
+[{
+    "Entity ID": "light.volttrontest_light",
+    "Entity Point": "state",
+    "Volttron Point Name": "light_state",
+    "Units": "On / Off",
+    "Units Details": "off: 0, on: 1",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test light state"
+},
+{
+    "Entity ID": "light.volttrontest_light",
+    "Entity Point": "brightness",
+    "Volttron Point Name": "light_brightness",
+    "Units": "int",
+    "Units Details": "0-255",
+    "Writable": true,
+    "Starting Value": 0,
+    "Type": "int",
+    "Notes": "test light brightness"
+}]
